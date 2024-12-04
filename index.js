@@ -124,6 +124,8 @@ export const io = new Server(expressServer, {
       "https://property-sell.vercel.app",
       "https://property-sell-gjz462ec1-emoncr.vercel.app/",
       "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:8081",
       "https://property-sell.onrender.com",
     ],
     credentials: true,
