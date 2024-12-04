@@ -1,4 +1,4 @@
-LIVE_URL: https://property-sell.vercel.app/
+LIVE_URL: https://
 
 Excited to announce the completion of my latest project, 'Property Sale'! 🏡 Built on MERN stack with real-time chat functionality using Socket.io. A platform where you can buy, sell, or rent properties.
 
@@ -22,4 +22,4 @@ Features: 🚀
 
 Ahhh😪...there are many more features here is live url and don't forget to check it out.
 
-Live URL - https://property-sell.vercel.app/
+Live URL - https://
