@@ -82,6 +82,9 @@ app.use("/api/notification", notificatonRoute);
 app.use("/api/admin", adminRouter);
 app.use("/api/helper", helperRouter);
 
+app.get("/test", (req, res) => {
+  res.send("Success of Test API");
+});
 //============== Deployment==============//
 
 const __dirname = path.resolve();

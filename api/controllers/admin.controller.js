@@ -4,6 +4,7 @@ import CommSale from "../models/commercial_sale.models.js";
 import ResiRent from "../models/residential_rent.models.js";
 import ResiSale from "../models/residential_sale.models.js";
 import { throwError } from "../utils/error.js";
+import axios from "axios";
 import XLSX from "xlsx";
 
 //
@@ -171,9 +172,15 @@ export const loadDbOfCommRent = async (req, res, next) => {
       try {
         // Define the path to the file directly
         console.log("Processing file:", fileName);
-
-        // Read the XLSX file
-        const workbook = XLSX.readFile(fileName);
+        const workbook = process.env.NODE_ENV === "local" 
+        ? XLSX.readFile(fileName) 
+        : await (async () => {
+            const response_xlsx = await axios.get(fileName, {
+                responseType: 'arraybuffer', // Handle binary data
+            });
+            // Read the XLSX file
+            return XLSX.read(response_xlsx.data, { type: 'buffer' });
+        })();
         const sheetName = workbook.SheetNames[0]; // Assuming the data is in the first sheet
         const worksheet = workbook.Sheets[sheetName];
         console.log("here");
@@ -306,14 +313,31 @@ export const loadDbOfCommSale = async (req, res, next) => {
   try {
     const comm_rent_files = [process.env.COMMERCIAL_SALE];
     const savedEntries = [];
+    // let workbook;
 
     for (const fileName of comm_rent_files) {
       try {
         // Define the path to the file directly
         console.log("Processing file:", fileName);
-
-        // Read the XLSX file
-        const workbook = XLSX.readFile(fileName);
+        // if (process.env.NODE_ENV === "local") {
+        //   workbook = XLSX.read(fileName);
+        // } else {
+        //   const response_xlsx = await axios.get(fileName, {
+        //       responseType: 'arraybuffer', // Handle binary data
+        //   });        
+        //   // Read the XLSX file
+        //   workbook = XLSX.read(response_xlsx.data, { type: 'buffer' });          
+        // }
+        const workbook = process.env.NODE_ENV === "local" 
+        ? XLSX.readFile(fileName) 
+        : await (async () => {
+            const response_xlsx = await axios.get(fileName, {
+                responseType: 'arraybuffer', // Handle binary data
+            });
+            // Read the XLSX file
+            return XLSX.read(response_xlsx.data, { type: 'buffer' });
+        })();
+    
         const sheetName = workbook.SheetNames[0]; // Assuming the data is in the first sheet
         const worksheet = workbook.Sheets[sheetName];
 
@@ -431,6 +455,7 @@ export const loadDbOfCommSale = async (req, res, next) => {
     }
 
     // Respond with the saved entries
+    console.log("000000");
     res.status(201).json({
       message: "Unique data successfully loaded into the database.",
       data: savedEntries,
@@ -452,8 +477,15 @@ export const loadDbOfResiRent = async (req, res, next) => {
         // Define the path to the file directly
         console.log("Processing file:", fileName);
 
-        // Read the XLSX file
-        const workbook = XLSX.readFile(fileName);
+        const workbook = process.env.NODE_ENV === "local" 
+        ? XLSX.readFile(fileName) 
+        : await (async () => {
+            const response_xlsx = await axios.get(fileName, {
+                responseType: 'arraybuffer', // Handle binary data
+            });
+            // Read the XLSX file
+            return XLSX.read(response_xlsx.data, { type: 'buffer' });
+        })();
         const sheetName = workbook.SheetNames[0]; // Assuming the data is in the first sheet
         const worksheet = workbook.Sheets[sheetName];
 
@@ -618,8 +650,15 @@ export const loadDbOfResiSale = async (req, res, next) => {
         // Define the path to the file directly
         console.log("Processing file:", fileName);
 
-        // Read the XLSX file
-        const workbook = XLSX.readFile(fileName);
+        const workbook = process.env.NODE_ENV === "local" 
+        ? XLSX.readFile(fileName) 
+        : await (async () => {
+            const response_xlsx = await axios.get(fileName, {
+                responseType: 'arraybuffer', // Handle binary data
+            });
+            // Read the XLSX file
+            return XLSX.read(response_xlsx.data, { type: 'buffer' });
+        })();
         const sheetName = workbook.SheetNames[0]; // Assuming the data is in the first sheet
         const worksheet = workbook.Sheets[sheetName];
 
