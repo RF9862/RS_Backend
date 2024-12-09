@@ -4,6 +4,7 @@ import CommSale from "../models/commercial_sale.models.js";
 import ResiRent from "../models/residential_rent.models.js";
 import ResiSale from "../models/residential_sale.models.js";
 import { throwError } from "../utils/error.js";
+import Favorite from "../models/favorite.models.js";
 import axios from "axios";
 import XLSX from "xlsx";
 
@@ -172,14 +173,12 @@ export const loadDbOfCommRent = async (req, res, next) => {
       try {
         // Define the path to the file directly
         console.log("Processing file:", fileName);
-        const workbook = process.env.NODE_ENV === "local" 
-        ? XLSX.readFile(fileName) 
-        : await (async () => {
-            const response_xlsx = await axios.get(fileName, {
-                responseType: 'arraybuffer', // Handle binary data
-            });
-            // Read the XLSX file
-            return XLSX.read(response_xlsx.data, { type: 'buffer' });
+        const workbook = await (async () => {
+          const response_xlsx = await axios.get(fileName, {
+              responseType: 'arraybuffer', // Handle binary data
+          });
+          // Read the XLSX file
+          return XLSX.read(response_xlsx.data, { type: 'buffer' });
         })();
         const sheetName = workbook.SheetNames[0]; // Assuming the data is in the first sheet
         const worksheet = workbook.Sheets[sheetName];
@@ -328,14 +327,12 @@ export const loadDbOfCommSale = async (req, res, next) => {
         //   // Read the XLSX file
         //   workbook = XLSX.read(response_xlsx.data, { type: 'buffer' });          
         // }
-        const workbook = process.env.NODE_ENV === "local" 
-        ? XLSX.readFile(fileName) 
-        : await (async () => {
-            const response_xlsx = await axios.get(fileName, {
-                responseType: 'arraybuffer', // Handle binary data
-            });
-            // Read the XLSX file
-            return XLSX.read(response_xlsx.data, { type: 'buffer' });
+        const workbook = await (async () => {
+          const response_xlsx = await axios.get(fileName, {
+              responseType: 'arraybuffer', // Handle binary data
+          });
+          // Read the XLSX file
+          return XLSX.read(response_xlsx.data, { type: 'buffer' });
         })();
     
         const sheetName = workbook.SheetNames[0]; // Assuming the data is in the first sheet
@@ -477,14 +474,12 @@ export const loadDbOfResiRent = async (req, res, next) => {
         // Define the path to the file directly
         console.log("Processing file:", fileName);
 
-        const workbook = process.env.NODE_ENV === "local" 
-        ? XLSX.readFile(fileName) 
-        : await (async () => {
-            const response_xlsx = await axios.get(fileName, {
-                responseType: 'arraybuffer', // Handle binary data
-            });
-            // Read the XLSX file
-            return XLSX.read(response_xlsx.data, { type: 'buffer' });
+        const workbook = await (async () => {
+          const response_xlsx = await axios.get(fileName, {
+              responseType: 'arraybuffer', // Handle binary data
+          });
+          // Read the XLSX file
+          return XLSX.read(response_xlsx.data, { type: 'buffer' });
         })();
         const sheetName = workbook.SheetNames[0]; // Assuming the data is in the first sheet
         const worksheet = workbook.Sheets[sheetName];
@@ -650,14 +645,12 @@ export const loadDbOfResiSale = async (req, res, next) => {
         // Define the path to the file directly
         console.log("Processing file:", fileName);
 
-        const workbook = process.env.NODE_ENV === "local" 
-        ? XLSX.readFile(fileName) 
-        : await (async () => {
-            const response_xlsx = await axios.get(fileName, {
-                responseType: 'arraybuffer', // Handle binary data
-            });
-            // Read the XLSX file
-            return XLSX.read(response_xlsx.data, { type: 'buffer' });
+        const workbook = await (async () => {
+          const response_xlsx = await axios.get(fileName, {
+              responseType: 'arraybuffer', // Handle binary data
+          });
+          // Read the XLSX file
+          return XLSX.read(response_xlsx.data, { type: 'buffer' });
         })();
         const sheetName = workbook.SheetNames[0]; // Assuming the data is in the first sheet
         const worksheet = workbook.Sheets[sheetName];
@@ -849,6 +842,93 @@ export const getResiSaleFromDB = async (req, res) => {
     res.status(500).json({ message: "Error fetching data", error });
   }
 };
+export const getDBCount = async (req, res) => {
+  try {
+    const count = await CommSale.find().countDocuments();
+    const count1 = await CommRent.find().countDocuments();
+    const count2 = await ResiSale.find().countDocuments();
+    const count3 = await ResiRent.find().countDocuments();
+    res.json({ count: count, count1: count1, count2: count2, count3: count3 });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching data", error });
+  }
+};
+export const searchFavorite = async (req, res) => {
+  const { list_id, user_id, cate, currentPage, itemsPerPage } = req.body;
+  const newFavorite = new Favorite({
+    user_id: user_id,
+    list_id: list_id,
+    cate: cate,
+    currentPage: currentPage,
+    itemsPerPage: itemsPerPage,
+  });
+  const skip = (parseInt(currentPage) - 1) * parseInt(itemsPerPage);
+  const limit = parseInt(itemsPerPage);
+  try {
+    const properties = await dbs[cate].aggregate([
+      {
+        $match: {
+          _id: {
+            $in: await Favorite.distinct("list_id", { user_id: user_id }),
+          },
+        },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+    ]);
+
+    console.log(user_id);
+    const count = await dbs[cate].aggregate([
+      {
+        $match: {
+          _id: {
+            $in: await Favorite.distinct("list_id", { user_id: user_id }),
+          },
+        },
+      },
+      {
+        $count: "count", // This stage counts the number of documents that passed the match stage
+      },
+    ]);
+
+    res.json({ row: properties, count: count });
+  } catch (error) {
+    console.error("Error fetching properties:", error);
+    res.status(500).send("Server Error");
+  }
+};
+export const setFavorite = async (req, res) => {
+  const { list_id, user_id, cate } = req.body;
+  const newFavorite = new Favorite({
+    user_id: user_id,
+    list_id: list_id,
+    cate: cate,
+  });
+
+  try {
+    await newFavorite.save();
+    res.json({ message: "successfully favorited" });
+  } catch (error) {
+    res.json({ message: error });
+  }
+};
+
+
+export const deleteList = async (req, res) => {
+  const { list_id, user_id, cate } = req.body;
+
+  try {
+    dbs[cate].deleteOne({ id: list_id });
+    Favorite.deleteOne({ list_id: list_id, user_id: user_id });
+    res.json({ message: "successfully deleted" });
+  } catch (error) {
+    res.json({ message: error });
+  }
+};
 
 export const searchOnDB = async (req, res) => {
   const {
@@ -871,50 +951,49 @@ export const searchOnDB = async (req, res) => {
     currentPage,
     itemsPerPage,
   } = req.body;
+  console.log("===", selectedSubProperties);
   
   // Build query
   const query = [];
   // if (keywords) query.name = { $regex: keywords, $options: "i" }
+  
   if (selectedSubProperties.length > 0) {
-    selectedSubProperties.map((item, index) =>
-      query.push({ property_type: selectedSubProperties[index] })
-    );
+    query.push({ property_type: { $in: selectedSubProperties } });
   }
   
   if (selectedSubMrts.length > 0) {
-    selectedSubMrts.map((item, index) =>
-      query.push({ mrt: selectedSubMrts[index] })
-    );
+    query.push({ mrt: { $in: selectedSubMrts } });
   }
   
   if (selectedSubAmenities.length > 0) {
-    selectedSubAmenities.map((item, index) =>
-      query.push({
-        amenities_list: selectedSubAmenities[index],
-      })
-    );
+    query.push({ amenities_list: { $in: selectedSubAmenities } });
   }
-  
+
+  if (district.length > 0) {
+    query.push({ district: { $in: district } });
+  }
+  if (BedsNums.length > 0) {
+    query.push({ beds: { $in: BedsNums } });
+  }
+  if (BathsNums.length > 0) {
+    query.push({ bathrooms: { $in: BathsNums } });
+  }
+  if (selectedFurnishing.length > 0) {
+    query.push({ furnishing: { $in: selectedFurnishing } });
+  }
+
   if (nameKeys) query.push({ name: { $regex: nameKeys, $options: "i" } });
   if (addressKeys)
     query.push({ address: { $regex: addressKeys, $options: "i" } });
   if (devNameKeys)
     query.push({ dev_name: { $regex: devNameKeys, $options: "i" } });
   if (tenureKeys) query.push({ tenure: { $regex: tenureKeys, $options: "i" } });
-  // if (selectedFurnishing)
-  //   query.push({
-  //     furnishing: { $regex: selectedFurnishing.value, $options: "i" },
-  //   });
     
   if (minPrice) query.push({ price: { $gte: minPrice } });
   if (maxPrice) query.push({ price: { $lte: maxPrice } });
-  if (district) query.push({ district });
   if (minAreaVal) query.push({ area_size: { $gte: minAreaVal } });
   if (maxAreaVal) query.push({ area_size: { $lte: maxAreaVal } });
-  if (BedsNums) query.push({ beds: BedsNums.value });
-  if (BathsNums) query.push({ bathrooms: BathsNums.value });
 
-  console.log("====>", query);
   const skip = (parseInt(currentPage) - 1) * parseInt(itemsPerPage);
   const limit = parseInt(itemsPerPage);
 
@@ -926,7 +1005,7 @@ export const searchOnDB = async (req, res) => {
       .skip(skip)
       .limit(limit);
     const count = await dbs[db_index].find(newquery).countDocuments();
-    console.log("ca", newquery);
+    console.log("newquery", newquery);
     res.json({ row: properties, count: count });
   } catch (error) {
     console.error("Error fetching properties:", error);
@@ -934,38 +1013,6 @@ export const searchOnDB = async (req, res) => {
   }
 };
 
-export const searchOnDB_mobile_test = async (req, res) => {
-  const { db_index, keywords, nameKeys, addressKeys, selectedSubProperties, minPrice, maxPrice, district, minAreaVal, maxAreaVal, selectedSubAmenities, selectedFurnishing, selectedSubMrts, BedsNums, BathsNums } = req.body;
-  console.log("ca", minPrice, db_index);
-  // Build query
-  const query = {};
-  // if (keywords) query.name = { $regex: keywords, $options: "i" };
-  if (selectedSubProperties.length > 0) query.property_type = { $in: selectedSubProperties };
-  if (district.length > 0) query.district = { $in: district };
-  // if (selectedSubAmenities.length > 0) query.amenities_list = { $in: selectedSubAmenities };
-  if (selectedFurnishing.length > 0) query.furnishing = { $in: selectedFurnishing };
-  if (selectedSubMrts.length > 0) query.mrt = { $in: selectedSubMrts };
-  
-
-  if (minPrice > 10) query.price = { ...query.price, $gte: minPrice };
-  if (maxPrice < 4000000) query.price = { ...query.price, $lte: maxPrice };
-  if (minAreaVal>1) query.area_size = { ...query.area_size, $gte: minAreaVal };
-  if (maxAreaVal<5000) query.area_size = { ...query.area_size, $lte: maxAreaVal };  
-  if (BedsNums>0) query.beds = BedsNums;
-  if (BathsNums>0) query.bathrooms = BathsNums;
-
-  if (nameKeys !== "") query.name = nameKeys;
-  if (addressKeys !== "") query.address = addressKeys;
-
-  console.log("=======>", query);
-  try {
-    const properties = await dbs[db_index].find(query);
-    res.json(properties);
-  } catch (error) {
-    console.error("Error fetching properties:", error);
-    res.status(500).send("Server Error");
-  }
-};
 // Endpoint to fetch details by ID
 export const getDetailByID = async (req, res) => {
   try {
@@ -1480,5 +1527,58 @@ export const getSearchConsts = async (req, res) => {
     res.status(200).json(Property_types);
   } catch (error) {
     res.status(500).json({ message: "Error fetching data", error });
+  }
+};
+
+
+export const profileSave = async (req, res, next) => {
+  const { username, email, id } = req.body;
+  const updatedData = {
+    username: username,
+    email: email,
+  };
+  try {
+    await User.updateOne({ _id: id }, { $set: updatedData });
+    res.json("update successfully");
+  } catch (error) {
+    console.error("Error fetching detail:", error);
+    res.status(500).json({ error: "Internal Server Error11111" });
+  }
+};
+export const roleChange = async (req, res, next) => {
+  const { id, role } = req.body;
+  const updatedData = {
+    role: role,
+  };
+  try {
+    await User.updateOne({ _id: id }, { $set: updatedData });
+    res.json("update successfully");
+  } catch (error) {
+    console.error("Error fetching detail:", error);
+    res.status(500).json({ error: "Internal Server Error11111" });
+  }
+};
+export const pwdChange = async (req, res, next) => {
+  const { old_pwd, new_pwd, confirm_pwd, id } = req.body;
+  if (new_pwd != confirm_pwd)
+    res.status(500).json({ error: "mismatching password" });
+
+  const duplicate = await User.findOne({
+    $or: [
+      { _id: id }, // Assuming your user model has a username field
+      { password: bcrypt.hashSync(new_pwd, 10) },
+    ],
+  });
+  if (!duplicate) res.status(500).json({ error: "mismatching password" });
+
+  const updatedData = {
+    password: bcrypt.hashSync(new_pwd, 10),
+  };
+  try {
+    await User.updateOne({ _id: id }, { $set: updatedData });
+    res.json("update successfully");
+  } catch (error) {
+    console.error("Error fetching detail:", error);
+    res.status(500).json({ error: "Internal Server Error11111" });
   }
 };

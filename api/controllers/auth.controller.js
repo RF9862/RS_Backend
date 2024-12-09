@@ -4,21 +4,32 @@ import { throwError } from "../utils/error.js";
 import jwt from "jsonwebtoken";
 import { passwordGenarator, usernameGenarator } from "../utils/helper.js";
 
+const downloadImageAsBuffer = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.statusText}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+};
+
 //======handle singup route ===========//
 export const singup = async (req, res, next) => {
-  console.log("--------");
   const { username, email, password, role } = req.body;
-  console.log(username, email, password);
-
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   const duplicate = await User.findOne({ username, email });
   if (!duplicate) {
+    const avatarBuffer = await downloadImageAsBuffer(
+      "https://thinksport.com.au/wp-content/uploads/2020/01/avatar-.jpg"
+    );      
     const newUser = new User({
       username,
       email,
       password: hashedPassword,
       role: 0,
+      contentType:"image/jpg",
+      avatar: avatarBuffer,
     });
     try {
       await newUser.save();
@@ -39,28 +50,27 @@ export const singup = async (req, res, next) => {
 
 // ========sing in route handling here =====//
 export const signin = async (req, res, next) => {
+
   const { email, userPassword } = req.body;
-  console.log(email, userPassword);
+  console.log("email", email);
+
   try {
-    const validUser = await User.findOne({ email });
+    const validUser = await User.findOne({ email: email });
     if (!validUser) return next(throwError(404, "Worng Credentials!"));
     const isValidPassword = bcrypt.compareSync(
       userPassword,
       validUser.password
     );
+
     if (!isValidPassword) return next(throwError(401, "Worng Credentials!"));
     const { password, ...rest } = validUser._doc;
     const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET, {
       expiresIn: "720h",
     });
-    // res
-    //   .cookie("access_token", tooken, { httpOnly: true, secure: true })
-    //   .status(200)
-    //   .json(rest);
-    return res.json({
-      user: { id: validUser.id, email: validUser.email },
-      token,
-    });
+    res
+    .cookie("access_token", token, { httpOnly: true, secure: true })
+    .status(200)
+    .json(rest);    
   } catch (error) {
     console.log(error);
     next(error);
@@ -78,7 +88,6 @@ export const googleSignIn = async (req, res, next) => {
       const tooken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
         expiresIn: "720h",
       });
-      console.log("_doc", user._doc);
       const { password, ...rest } = user._doc;
       res
         .cookie("access_token", tooken, { httpOnly: true, secure: true })

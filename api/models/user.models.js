@@ -17,9 +17,13 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     avatar: {
-      type: String,
+      type: Buffer,
       default:
         "https://thinksport.com.au/wp-content/uploads/2020/01/avatar-.jpg",
+    },
+    contentType: {
+      type: String,
+      default: "",
     },
     role: {
       type: Number,

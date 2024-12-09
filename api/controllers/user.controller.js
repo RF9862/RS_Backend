@@ -16,10 +16,14 @@ export const getUser = async (req, res, next) => {
   }
 };
 
-
 export const getAllUser = async (req, res, next) => {
+  const { flt } = req.body;
+  let query;
+  if (flt != "") query = { email: { $regex: flt, $options: "i" } };
+  let users = "";
   try {
-    const users = await User.find(); // Retrieve all users
+    if (flt != "") users = await User.find(query);
+    else users = await User.find(); // Retrieve all users
 
     // Filter out passwords and return other user information
     res.status(200).json(users);

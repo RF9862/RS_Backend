@@ -5,7 +5,6 @@ import {
     loadDbOfResiRent,
     loadDbOfResiSale,
     searchOnDB,
-    searchOnDB_mobile_test,
     getCommRentFromDB,
     getCommSaleFromDB,
     getResiRentFromDB,
@@ -13,6 +12,12 @@ import {
     getDetailByID,
     getDashboardImgs, 
     getSearchConsts,
+    setFavorite, 
+    searchFavorite, 
+    deleteList,
+    profileSave,
+    roleChange,
+    getDBCount,
 } from "../controllers/admin.controller.js";
 
 const router = express.Router();
@@ -22,8 +27,6 @@ router.post("/upload_comm_sale", loadDbOfCommSale);
 router.post("/upload_resi_rent", loadDbOfResiRent);
 router.post("/upload_resi_sale", loadDbOfResiSale);
 router.post("/search", searchOnDB);
-router.post("/search_mobile_test", searchOnDB_mobile_test);
-
 router.get("/getCommRent", getCommRentFromDB);
 router.get("/getCommSale", getCommSaleFromDB);
 router.get("/getResiRent", getResiRentFromDB);
@@ -32,6 +35,13 @@ router.get("/getResiSale", getResiSaleFromDB);
 router.get("/getDetail/:idb/:id", getDetailByID);
 router.get("/bgImgs/:id", getDashboardImgs);
 router.get("/getSearchConsts", getSearchConsts);
+router.post("/setFavorite", setFavorite);
+router.post("/searchFavorite", searchFavorite);
+router.post("/deleteList", deleteList);
+router.post("/profileSave", profileSave);
+router.post("/roleChange", roleChange);
+router.get("/getDBCount", getDBCount);
+
 
 router.get("/test", (req, res) => {
     res.send("Success of Admin Test API");
