@@ -9,7 +9,7 @@ import { verifyToken } from "../utils/varifyUser.js";
 const router = express.Router();
 
 router.post("/create", createNotification);
-router.get("/:id", verifyToken, getNotification);
+router.get("/:id", getNotification);
 router.delete("/delete/:id", deleteNotification);
 
 export default router;

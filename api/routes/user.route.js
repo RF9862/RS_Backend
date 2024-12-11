@@ -5,15 +5,17 @@ import {
   getUser,
   getAllUser,
   userPosts,
+  uploadAvatar,
 } from "../controllers/user.controller.js";
 import { verifyToken } from "../utils/varifyUser.js";
 
 const router = express.Router();
 
 router.get("/:id", getUser);
-router.post("/", getAllUser);
-router.post("/update/:id", verifyToken, updateUser);
-router.delete("/delete/:id", verifyToken, deleteUser);
-router.get("/posts/:id", verifyToken, userPosts);
+router.post("/", verifyToken, getAllUser);
+router.post("/update/:id", updateUser);
+router.delete("/delete/:id", deleteUser);
+router.get("/posts/:id", userPosts);
+router.post("/avatarUpload", verifyToken, uploadAvatar);
 
 export default router;

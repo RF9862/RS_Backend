@@ -1,10 +1,11 @@
 import Conversation from "../models/conversation.models.js";
+import User from "../models/user.models.js";
 import { throwError } from "../utils/error.js";
 
 // Get Conversation controller
 export const getConversation = async (req, res, next) => {
-  if (req.user.id !== req.params.id)
-    return next(throwError(401, "user is not valid"));
+  // if (req.user.id !== req.params.id)
+  //   return next(throwError(401, "user is not valid"));
 
   try {
     const userConversation = await Conversation.find({
@@ -15,18 +16,14 @@ export const getConversation = async (req, res, next) => {
     next(error);
   }
 };
-
-// Post Conversation controller
-
 export const createConversation = async (req, res, next) => {
-  if (req.user.id != req.body.creatorId)
-    return next(throwError(401, "user is not valid"));
-
-  if (req.body.creatorId === req.body.perticipantId)
-    return next(throwError(402, "request error"));
+  // Ensure creator and participant are not the same
+  if (req.body.creatorId === req.body.participantId) {
+    return next(throwError(402, "Creator and participant cannot be the same user."));
+  }
 
   try {
-    // check is new conversation or not
+    // Check if a conversation already exists
     const conversations = await Conversation.find({
       $or: [
         {
@@ -45,11 +42,26 @@ export const createConversation = async (req, res, next) => {
     });
 
     if (conversations.length === 0) {
-      const newConversation = Conversation(req.body);
+      // Fetch user details for chatCreator and chatPartner
+      const chatCreator = await User.findById(req.body.creatorId);
+      const chatPartner = await User.findById(req.body.participantId);
+
+      if (!chatCreator || !chatPartner) {
+        return next(throwError(404, "One or both users not found."));
+      }
+
+      // Create a new conversation
+      const newConversation = new Conversation({
+        creatorId: req.body.creatorId,
+        participantId: req.body.participantId,
+        chatCreator: chatCreator, // Add full user object if needed, or specific fields
+        chatPartner: chatPartner, // Add full user object if needed, or specific fields
+      });
+
       await newConversation.save();
-      res.status(201).json("conversation created succesfully");
+      res.status(201).json({ message: "Conversation created successfully." });
     } else {
-      res.status(403).json("conversation already exist");
+      res.status(403).json({ message: "Conversation already exists." });
     }
   } catch (error) {
     next(error);

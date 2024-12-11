@@ -15,8 +15,8 @@ import path from "path";
 import http from "http";
 import { Server } from "socket.io";
 import User from "./api/models/user.models.js";
+import SalesPerson from "./api/models/salesPerson.models.js";
 import bcrypt from "bcrypt";
-import multer from "multer";
 
 const app = express();
 app.use(express.json());
@@ -45,6 +45,7 @@ if (process.env.NODE_ENV === "local") {
         "http://172.20.60.63:8082",
         "http://192.168.189.1:8081",
         "http://localhost:5173",
+        "http://localhost:5174",
       ],
       credentials: true,
     })
@@ -70,7 +71,7 @@ async function main() {
   const duplicate = await User.findOne({
     $or: [
       { username: "ananjuda" }, // Assuming your user model has a username field
-      { email: "ananjuda@gmail.com" },
+      { email: "judaar@gmail.com" },
     ],
   });
   if (!duplicate) {
@@ -80,7 +81,8 @@ async function main() {
     );    
     const newUser = new User({
       username: "ananjuda",
-      email: "ananjuda@gmail.com",
+      email: "judaar@gmail.com",
+      phone: "+6590290238",
       password: hashedPassword,
       role: 5,
       contentType:"image/jpg",
@@ -89,6 +91,23 @@ async function main() {
     });
     await newUser.save();
   }
+  // for sales person db
+
+  const salesPerson_duplicate = await SalesPerson.findOne( {dbName: "comm_rent"} );
+  const dbNames = ["comm_rent","comm_sale", "resi_rent", "resi_sale"];
+  if (!salesPerson_duplicate) {
+
+    for(let i=0;i<4;i++){
+      const newSalesPerson = new SalesPerson({
+        dbName: dbNames[i],
+        dbIndex: i,
+        userID: "",
+        userName: "",
+      });
+      await newSalesPerson.save();
+    }
+
+  }  
 }
 
 // Starting the server
@@ -143,9 +162,11 @@ export const io = new Server(expressServer, {
   cors: {
     origin: [
       "http://localhost:5173",
+      "http://localhost:5174",
       "https://property-sell.vercel.app",
       "https://property-sell-gjz462ec1-emoncr.vercel.app/",
       "http://localhost:3000",
+      "http://localhost:3001",
       "https://property-sell.onrender.com",
     ],
     credentials: true,
@@ -161,6 +182,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_message", (data) => {
+    console.log("---------------------->", data, data.chatId);
     socket.to(data.chatId).emit("receive_message", data);
     socket.broadcast.emit(`${data.to}`, data);
   });
@@ -171,27 +193,3 @@ io.on("connection", (socket) => {
 });
 
 /////////////////////////////////////////////////////////////////
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
-// Create an uploads directory if it doesn't exist
-
-// Define the upload route
-app.post("/upload", upload.single("image"), async (req, res) => {
-  const result = await User.updateOne(
-    { _id: req.body.id }, // Filter to match the document
-    { $set: { avatar: req.file.buffer, contentType: req.file.mimetype } } // Update operation
-  );
-  if (result.modifiedCount === 0) {
-    res.json({
-      message: "User not found or avatar not updated.",
-    });
-  } else {
-    res.json({
-      buffer: req.file.buffer,
-      type: req.file.mimetype,
-      message: "File uploaded successfully!",
-    });
-  }
-});

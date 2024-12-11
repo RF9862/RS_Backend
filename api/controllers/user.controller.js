@@ -17,6 +17,7 @@ export const getUser = async (req, res, next) => {
 };
 
 export const getAllUser = async (req, res, next) => {
+
   const { flt } = req.body;
   let query;
   if (flt != "") query = { email: { $regex: flt, $options: "i" } };
@@ -25,8 +26,19 @@ export const getAllUser = async (req, res, next) => {
     if (flt != "") users = await User.find(query);
     else users = await User.find(); // Retrieve all users
 
-    // Filter out passwords and return other user information
-    res.status(200).json(users);
+
+    const requestUser = await User.findById(req.user.id);
+    let permission = 0;
+    // Process response based on the user's role
+    if (requestUser.role === 5 ) {
+      // Send full detail and salesperson for roles 5 and 2
+      permission = 1;
+      res.status(200).json({ users, permission });
+    } else {
+      // Handle cases where the user's role doesn't match the above conditions
+      res.status(403).json({ error: "Access denied" });
+    }
+
   } catch (error) {
     next(error);
   }
@@ -69,11 +81,12 @@ export const updateUser = async (req, res, next) => {
 
 //=====Handle User Delete=====//
 export const deleteUser = async (req, res, next) => {
-  if (req.user.id !== req.params.id)
-    return next(throwError(401, "User Invalid"));
+  console.log("======", req.user.id);
+  // if (req.user.id !== req.params.id)
+  //   return next(throwError(401, "User Invalid"));
   try {
     await User.findByIdAndDelete(req.params.id);
-    res.clearCookie("access_token");
+    // res.clearCookie("access_token");
     res.status(200).json("User Deleted Successfully!");
   } catch (error) {
     next(error);
@@ -90,4 +103,52 @@ export const userPosts = async (req, res, next) => {
   } catch (error) {
     next(throwError(404, error.message));
   }
+};
+
+
+
+import multer from "multer";
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+// Create an uploads directory if it doesn't exist
+
+// Define the upload route
+export const uploadAvatar = async (req, res, next) => {
+  // Middleware for handling file upload
+  upload.single("image")(req, res, async (err) => {
+    if (err) {
+      console.error("Error during file upload middleware:", err);
+      return res.status(500).json({ error: "File upload failed." });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded." });
+    }
+    try {
+      const result = await User.updateOne(
+        { _id: req.body.id },
+        {
+          $set: {
+            avatar: req.file.buffer,
+            contentType: req.file.mimetype,
+          },
+        }
+      );
+
+      if (result.modifiedCount === 0) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+      res.status(200).json({
+        message: "File uploaded successfully!",
+        buffer: req.file.buffer,
+        type: req.file.mimetype,
+      });
+    } catch (error) {
+      console.error("Error during file upload operation:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
 };

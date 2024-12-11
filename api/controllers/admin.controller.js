@@ -7,6 +7,8 @@ import { throwError } from "../utils/error.js";
 import Favorite from "../models/favorite.models.js";
 import axios from "axios";
 import XLSX from "xlsx";
+import User from "../models/user.models.js";
+import SalesPerson from "../models/salesPerson.models.js";
 
 //
 const dbs = [CommRent, CommSale, ResiRent, ResiSale];
@@ -917,18 +919,48 @@ export const setFavorite = async (req, res) => {
   }
 };
 
-
 export const deleteList = async (req, res) => {
   const { list_id, user_id, cate } = req.body;
 
   try {
-    dbs[cate].deleteOne({ id: list_id });
-    Favorite.deleteOne({ list_id: list_id, user_id: user_id });
-    res.json({ message: "successfully deleted" });
+    // Deleting from the main database
+    const listResult = await dbs[cate].deleteOne({ _id: list_id });
+    if (listResult.deletedCount === 0) {
+      return res.status(404).json({ message: "List not found" });
+    }
+
+    // Deleting from the favorites
+    const favoriteResult = await Favorite.deleteOne({ list_id: list_id, user_id: user_id });
+    if (favoriteResult.deletedCount === 0) {
+      console.warn("No corresponding favorite entry found to delete.");
+    }
+
+    res.json({ message: "Successfully deleted" });
   } catch (error) {
-    res.json({ message: error });
+    console.error("Error deleting list:", error);
+    res.status(500).json({ message: "Internal server error", error });
   }
 };
+
+
+export const deleteFavorite = async (req, res) => {
+  const { list_id, user_id, cate } = req.body;
+
+  try {
+    const result = await Favorite.deleteOne({ list_id: list_id, user_id: user_id });
+
+    if (result.deletedCount === 0) {
+      // No document was deleted
+      return res.status(404).json({ message: "Favorite item not found" });
+    }
+
+    res.json({ message: "Successfully deleted" });
+  } catch (error) {
+    console.error("Error deleting favorite:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
 
 export const searchOnDB = async (req, res) => {
   const {
@@ -1018,18 +1050,44 @@ export const getDetailByID = async (req, res) => {
   try {
     const idb = req.params.idb;
     const id = req.params.id;
-    const detail = await dbs[idb].findById(id);
 
+    // Fetch the requested detail by ID from the specific database
+    const detail = await dbs[idb].findById(id);
     if (!detail) {
       return res.status(404).json({ error: "Detail not found" });
     }
 
-    res.json(detail);
+    // Fetch the requesting user and salespersons
+    const requestUser = await User.findById(req.user.id);
+
+    let permission;
+    // Process response based on the user's role
+    if (requestUser.role === 5) {
+      const salesPersonInfo = await SalesPerson.findOne({ dbIndex: idb });
+      const salesPerson = await User.findById(salesPersonInfo.userID);    
+      permission = 2;
+      res.status(202).json({ detail, salesPerson , permission });
+    } else if (requestUser.role === 2) {
+      const adminUser = await User.findOne({role:5});    
+      permission = 1;
+      res.status(201).json({ detail, adminUser , permission });
+    } else if (requestUser.role === 0) {
+      const salesPersonInfo = await SalesPerson.findOne({ dbIndex: idb });
+      const salesPerson = await User.findById(salesPersonInfo.userID);          
+      permission = 0;
+      // Exclude agent_name and agent_phone for role 0
+      const { agent_name, agent_phone, agent_photo, ...detailWithoutAgentInfo } = detail._doc;
+      res.status(200).json({ detail: detailWithoutAgentInfo, salesPerson, permission });
+    } else {
+      // Handle cases where the user's role doesn't match the above conditions
+      res.status(403).json({ error: "Access denied" });
+    }
   } catch (error) {
     console.error("Error fetching detail:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 export const getDashboardImgs = async (req, res) => {
   const id = req.params.id;
@@ -1546,6 +1604,7 @@ export const profileSave = async (req, res, next) => {
   }
 };
 export const roleChange = async (req, res, next) => {
+
   const { id, role } = req.body;
   const updatedData = {
     role: role,
@@ -1582,3 +1641,28 @@ export const pwdChange = async (req, res, next) => {
     res.status(500).json({ error: "Internal Server Error11111" });
   }
 };
+
+
+export const changeSalesPerson = async (req, res, next) => {
+  const { dbIndex, userID, userName } = req.body;
+  console.log("*******", dbIndex, userID);
+  try {
+    await SalesPerson.updateOne({ dbIndex: dbIndex }, { $set: { userID: userID, userName: userName } });
+    res.json("update successfully");
+  } catch (error) {
+    console.error("Error fetching detail:", error);
+    res.status(500).json({ error: "Internal Server Error11111" });
+  }
+};
+
+export const getSalesPerson = async (req, res, next) => {
+  try {
+    // Fetch all salespersons from the database
+    const salesPersons = await SalesPerson.find();
+    res.status(200).json(salesPersons); // Send the data as JSON
+  } catch (error) {
+    console.error('Error fetching salespersons:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+

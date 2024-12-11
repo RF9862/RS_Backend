@@ -3,6 +3,7 @@ import { throwError } from "../utils/error.js";
 
 // ====== Create Notifications
 export const createNotification = async (req, res, next) => {
+  console.log("^&^&^&");
   try {
     const { from } = req.body;
 
@@ -23,8 +24,8 @@ export const createNotification = async (req, res, next) => {
 
 //======= Get Notification=======//
 export const getNotification = async (req, res, next) => {
-  if (req.user.id != req.params.id)
-    return next(throwError(401, "User unauthorized!"));
+  // if (req.user.id != req.params.id)
+  //   return next(throwError(401, "User unauthorized!"));
   try {
     const notification = await Notifications.find({ to: req.params.id });
     res.status(200).json(notification);
