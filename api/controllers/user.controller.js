@@ -81,7 +81,6 @@ export const updateUser = async (req, res, next) => {
 
 //=====Handle User Delete=====//
 export const deleteUser = async (req, res, next) => {
-  console.log("======", req.user.id);
   // if (req.user.id !== req.params.id)
   //   return next(throwError(401, "User Invalid"));
   try {

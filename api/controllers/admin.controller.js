@@ -983,7 +983,6 @@ export const searchOnDB = async (req, res) => {
     currentPage,
     itemsPerPage,
   } = req.body;
-  console.log("===", selectedSubProperties);
   
   // Build query
   const query = [];
@@ -1645,7 +1644,6 @@ export const pwdChange = async (req, res, next) => {
 
 export const changeSalesPerson = async (req, res, next) => {
   const { dbIndex, userID, userName } = req.body;
-  console.log("*******", dbIndex, userID);
   try {
     await SalesPerson.updateOne({ dbIndex: dbIndex }, { $set: { userID: userID, userName: userName } });
     res.json("update successfully");

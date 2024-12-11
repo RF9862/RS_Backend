@@ -23,7 +23,6 @@ export const getMessage = async (req, res, next) => {
 export const postMessage = async (req, res, next) => {
   // if (req.user.id != req.body.sender)
   //   return next(throwError(401, "Token unauthorized"));
-  console.log("msg===", req.body);
   try {
     const newMessage = new Message(req.body);
     await newMessage.save();

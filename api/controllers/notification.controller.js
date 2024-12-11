@@ -3,7 +3,6 @@ import { throwError } from "../utils/error.js";
 
 // ====== Create Notifications
 export const createNotification = async (req, res, next) => {
-  console.log("^&^&^&");
   try {
     const { from } = req.body;
 

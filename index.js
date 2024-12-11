@@ -182,7 +182,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_message", (data) => {
-    console.log("---------------------->", data, data.chatId);
     socket.to(data.chatId).emit("receive_message", data);
     socket.broadcast.emit(`${data.to}`, data);
   });

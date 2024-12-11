@@ -109,6 +109,5 @@ const news = [
 
 // Get all news
 export const getNews = async (req, res) => {
-  console.log("=========");
   res.json(news);
 };
