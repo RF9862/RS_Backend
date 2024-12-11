@@ -161,6 +161,7 @@ app.use((err, req, res, next) => {
 export const io = new Server(expressServer, {
   cors: {
     origin: [
+      "http://95.216.125.17/:5173",
       "http://localhost:5173",
       "http://localhost:5174",
       "https://property-sell.vercel.app",
