@@ -1664,3 +1664,24 @@ export const getSalesPerson = async (req, res, next) => {
   }
 };
 
+
+export const updateItem = async (req, res, next) => {
+  const { idb, id } = req.params; // Get item ID from the URL parameter
+  const updateData = { ...req.body };
+  delete updateData._id;
+
+  try {
+    // Find the item by ID and update it with the new values
+    const updatedItem = await dbs[idb].findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!updatedItem) {
+      return res.status(404).json({ message: 'Item not found' });
+    }
+
+    // Send the updated item as the response
+    res.status(200).json({ message: 'Item updated successfully' });
+  } catch (error) {
+    console.error('Error updating item:', error);
+    res.status(500).json({ message: 'Error updating item' });
+  }
+};

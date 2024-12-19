@@ -22,6 +22,7 @@ import {
     changeSalesPerson,
     pwdChange,
     getSalesPerson,
+    updateItem,
 } from "../controllers/admin.controller.js";
 import { verifyToken } from "../utils/varifyUser.js";
 const router = express.Router();
@@ -35,6 +36,8 @@ router.get("/getCommRent", getCommRentFromDB);
 router.get("/getCommSale", getCommSaleFromDB);
 router.get("/getResiRent", getResiRentFromDB);
 router.get("/getResiSale", getResiSaleFromDB);
+router.put("/updateItem/:idb/:id", updateItem);
+
 
 router.get("/getDetail/:idb/:id", verifyToken, getDetailByID);
 router.get("/bgImgs/:id", getDashboardImgs);
